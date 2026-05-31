@@ -654,7 +654,7 @@
 <header>
   <h1>⚽ Álbum de Tomás Parra 🏆</h1>
   <p>Panini FIFA World Cup 2026 · 994 láminas</p>
-  <p style="font-size:0.7rem;color:#a5d6a7;margin-top:2px;">☁️ Sincronizado en la nube · todos los dispositivos</p>
+  <p id="sync-status" style="font-size:0.7rem;color:#a5d6a7;margin-top:2px;">☁️ Sincronizado en la nube · todos los dispositivos</p>
 
   <button id="btn-instalar" onclick="instalarApp()" style="display:none;margin-top:6px;background:#ffd600;color:#000;border:none;border-radius:20px;padding:6px 16px;font-family:Nunito,sans-serif;font-weight:800;font-size:0.78rem;cursor:pointer;align-items:center;gap:5px;">
     📲 Instalar en este dispositivo
@@ -984,19 +984,21 @@ function clearSelection() {
 }
 
 function loadState() {
+  const cloud = document.getElementById('sync-status');
   if (stateRef) {
-    // Firebase disponible — escuchar en tiempo real
+    if (cloud) { cloud.style.color = '#ffd600'; cloud.textContent = '⏳ Conectando con Firebase...'; }
     stateRef.on('value', function(snapshot) {
       state = snapshot.val() || {};
+      if (cloud) { cloud.style.color = '#a5d6a7'; cloud.textContent = '☁️ Sincronizado en la nube · todos los dispositivos'; }
       render();
     }, function(error) {
-      // Firebase falló — usar localStorage como fallback
-      console.warn('Firebase read error, usando localStorage:', error);
+      console.warn('Firebase read error:', error);
+      if (cloud) { cloud.style.color = '#e53935'; cloud.textContent = '⚠️ Error Firebase - usando datos locales'; }
       try { state = JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch(e) { state = {}; }
       render();
     });
   } else {
-    // Sin Firebase — usar localStorage
+    if (cloud) { cloud.style.color = '#e53935'; cloud.textContent = '⚠️ Sin Firebase - datos solo locales'; }
     try { state = JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch(e) { state = {}; }
     render();
   }
@@ -1004,7 +1006,20 @@ function loadState() {
 
 function saveState() {
   if (stateRef) {
-    stateRef.set(state).catch(e => console.warn('Firebase write error:', e));
+    stateRef.set(state)
+      .then(() => {
+        // Confirmación visual breve
+        const cloud = document.getElementById('sync-status');
+        if (cloud) { cloud.style.color = '#00c853'; cloud.textContent = '☁️ Guardado en la nube'; }
+      })
+      .catch(e => {
+        console.warn('Firebase write error:', e);
+        const cloud = document.getElementById('sync-status');
+        if (cloud) { cloud.style.color = '#e53935'; cloud.textContent = '⚠️ Error al guardar en nube - solo local'; }
+      });
+  } else {
+    const cloud = document.getElementById('sync-status');
+    if (cloud) { cloud.style.color = '#e53935'; cloud.textContent = '⚠️ Sin conexión a Firebase'; }
   }
   try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch(e) {}
 }
@@ -1297,7 +1312,7 @@ function abrirSobre() {
       <p style="font-size:0.82rem;color:#90a4ae;margin-bottom:12px;">Saca foto a las láminas o escribe los códigos.<br><span style="color:#ffd600;">Ej: ARG3, MEX7, BRA14, ESP2</span></p>
       
       <!-- Input de archivo oculto -->
-      
+      <input type="file" id="camara-input" accept="image/*" capture="environment" style="display:none" onchange="procesarFoto(event)">
       
       <!-- Botón cámara -->
       <button class="btn-camera" onclick="document.getElementById('camara-input').click()">
