@@ -1261,11 +1261,14 @@ function exportarLista() {
 // RESET
 // ==============================
 function resetConfirm() {
-  if (confirm('¿Reiniciar todo el álbum de Tomás? Se borrarán todas las láminas marcadas.')) {
+  const respuesta = prompt('⚠️ PELIGRO: Esto borrará TODAS las láminas marcadas de Firebase.\n\nEscribe REINICIAR para confirmar:');
+  if (respuesta === 'REINICIAR') {
     state = {};
     saveState();
     render();
     showToast('🔄 Álbum reiniciado');
+  } else {
+    showToast('❌ Reinicio cancelado');
   }
 }
 
